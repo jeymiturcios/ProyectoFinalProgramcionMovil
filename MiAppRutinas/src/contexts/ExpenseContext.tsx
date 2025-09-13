@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, ReactNode } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { db, auth } from "../config/firebase";
+import { collection, addDoc, getDocs, query, where } from "firebase/firestore";
 
 // Tipo de gasto
 export type Expense = {
@@ -23,17 +25,28 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
 
   // Agregar un gasto nuevo
-  const addExpense = (expense: Omit<Expense, "id">) => {
-    const newExpense: Expense = {
-      id: Date.now().toString(),
-      ...expense,
-    };
-    setExpenses((prev) => {
-      const updated = [...prev, newExpense];
-      AsyncStorage.setItem("expenses", JSON.stringify(updated));
-      return updated;
-    });
-  };
+const addExpense = async (expense: Omit<Expense, "id">) => {
+  if (!auth.currentUser) return;
+  const userId = auth.currentUser.uid;
+
+  await addDoc(collection(db, "users", userId, "expenses"), expense);
+  loadExpenses(); // recarga lista
+};
+
+  // loadExpenses
+const loadExpenses = async () => {
+  if (!auth.currentUser) return;
+  const userId = auth.currentUser.uid;
+
+  const q = query(collection(db, "users", userId, "expenses"));
+  const querySnapshot = await getDocs(q);
+
+  const loaded: Expense[] = [];
+  querySnapshot.forEach((doc) => {
+    loaded.push({ id: doc.id, ...(doc.data() as Expense) });
+  });
+  setExpenses(loaded);
+};
 
   // Limpiar gastos (opcional, para debug)
   const clearExpenses = () => {
