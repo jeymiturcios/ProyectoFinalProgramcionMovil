@@ -6,6 +6,7 @@ import AddExpenseScreen from './src/screens/AddExpenseScreen';
 import { AuthProvider } from './src/contexts/AuthContext';
 import { LanguageProvider } from './src/contexts/LanguageContext';
 import { ExpenseProvider } from './src/contexts/ExpenseContext';
+import SignUp from './src/screens/SignUp';
 
 const Stack = createNativeStackNavigator();
 
@@ -19,6 +20,7 @@ export default function App() {
               <Stack.Screen name='LoginScreen' component={Login} />
               <Stack.Screen name='HomeScreen' component={Home} />
               <Stack.Screen name='AddExpenseScreen' component={AddExpenseScreen} />
+              <Stack.Screen name="SignUp" component={SignUp} />
             </Stack.Navigator>
           </NavigationContainer>
         </ExpenseProvider>
