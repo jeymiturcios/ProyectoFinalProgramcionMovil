@@ -4,6 +4,7 @@ import CustomButton from "../components/CustomButton";
 import CustomInput from "../components/CustomInput";
 import { useAuth } from "../contexts/AuthContext";
 import { i18n } from "../contexts/LanguageContext";
+import FechaHora from "../components/FechaHora";
 
 export default function Login({ navigation }: any) {
   const [email, setEmail] = useState("");
@@ -31,6 +32,7 @@ export default function Login({ navigation }: any) {
   return (
     <View style={styles.container}>
       <View style={styles.backgroundCard}>
+
         <Text style={styles.title}>Organizador 💰</Text>
         <Text style={styles.subtitle}>Controla tus finanzas facilmente</Text>
 
@@ -66,6 +68,7 @@ export default function Login({ navigation }: any) {
           variant="tertiary"
         />
       </View>
+      
     </View>
   );
 }

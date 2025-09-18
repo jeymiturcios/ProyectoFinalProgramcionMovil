@@ -4,7 +4,6 @@ import { useAuth } from "../contexts/AuthContext";
 import { useExpenses } from "../contexts/ExpenseContext";
 import CustomButton from "../components/CustomButton";
 import { useNavigation } from "@react-navigation/native";
-
 export default function Home() {
   const { user } = useAuth();
   const { expenses } = useExpenses();
@@ -28,6 +27,7 @@ export default function Home() {
       <Text style={styles.header}>
         Hola {user?.email}, aquí están tus gastos:
       </Text>
+      
 
       <CustomButton
         title="Agregar gasto"
@@ -44,6 +44,7 @@ export default function Home() {
           contentContainerStyle={styles.list}
         />
       )}
+      
     </View>
   );
 }
