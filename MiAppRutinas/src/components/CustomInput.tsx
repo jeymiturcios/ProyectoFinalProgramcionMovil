@@ -1,14 +1,7 @@
-import { useState } from "react";
-import {
-  KeyboardTypeOptions,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+// CustomInput.tsx
+import React, { useState } from "react";
+import { KeyboardTypeOptions, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons";
-import { i18n } from "../contexts/LanguageContext";
 
 type Props = {
   value: string;
@@ -42,9 +35,9 @@ export default function CustomInput({
   const getError = () => {
     if (required && !value) return "El campo es obligatorio";
     if (type === "email" && value && !value.includes("@"))
-      return i18n.t("invalidEmail");
+      return "Correo inválido";
     if (type === "password" && value && value.length < 6)
-      return i18n.t("passwordMustBeStronger");
+      return "La contraseña debe tener al menos 6 caracteres";
     return null;
   };
 
@@ -66,6 +59,8 @@ export default function CustomInput({
           onChangeText={onChange}
           secureTextEntry={isSecureText}
           keyboardType={keyboardType}
+          autoCapitalize="none"
+          autoCorrect={false}
         />
 
         {isPasswordField && (

@@ -1,74 +1,119 @@
-import React, { useState } from "react";
-import { Alert, StyleSheet, Text, View } from "react-native";
+import React, { useState, useEffect } from "react";
+import { Alert, StyleSheet, Text, View, ActivityIndicator } from "react-native";
 import CustomButton from "../components/CustomButton";
 import CustomInput from "../components/CustomInput";
-import { useAuth } from "../contexts/AuthContext";
-import { i18n } from "../contexts/LanguageContext";
-import FechaHora from "../components/FechaHora";
+import { 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  sendPasswordResetEmail,
+  sendEmailVerification,
+  signOut,
+  onAuthStateChanged
+} from "firebase/auth";
+import { auth } from "../config/firebase";
 
 export default function Login({ navigation }: any) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(true);
 
-  const { login } = useAuth();
+  // 👀 Detectar usuario ya autenticado
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user && user.emailVerified) {
+        navigation.replace("HomeScreen");
+      }
+      setLoading(false);
+    });
+    return unsubscribe;
+  }, []);
 
+  if (loading) {
+    return (
+      <View style={styles.loading}>
+        <ActivityIndicator size="large" color="#007AFF" />
+      </View>
+    );
+  }
+
+  // Iniciar sesión
   const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert("Error", "Debes ingresar correo y contraseña");
+      return;
+    }
     try {
-      if (!email || !password) {
-        Alert.alert("Error", "Por favor complete todos los campos");
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      if (!userCredential.user.emailVerified) {
+        Alert.alert("Error", "Debes verificar tu correo antes de entrar");
+        await signOut(auth);
         return;
       }
-
-      login(email,password);
-
-      navigation.navigate("HomeScreen", {
-        correo: email,password
-      });
+      navigation.replace("HomeScreen");
     } catch (error: any) {
-      Alert.alert("Error", "No se pudo iniciar sesión");
+      Alert.alert("Error", error.message);
+    }
+  };
+
+  // Registrarse
+  const handleSignUp = async () => {
+    if (!email || !password) {
+      Alert.alert("Error", "Debes ingresar correo y contraseña");
+      return;
+    }
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      await sendEmailVerification(userCredential.user);
+      Alert.alert(
+        "Registro exitoso",
+        "Revisa tu correo para verificar tu cuenta antes de iniciar sesión"
+      );
+      await signOut(auth); 
+      setEmail("");
+      setPassword("");
+    } catch (error: any) {
+      Alert.alert("Error", error.message);
+    }
+  };
+
+  // Recuperar contraseña
+  const handleForgotPassword = async () => {
+    if (!email) {
+      Alert.alert("Error", "Introduce tu correo para recuperar contraseña");
+      return;
+    }
+    try {
+      await sendPasswordResetEmail(auth, email);
+      Alert.alert("Éxito", "Revisa tu correo para resetear contraseña");
+    } catch (error: any) {
+      Alert.alert("Error", error.message);
     }
   };
 
   return (
     <View style={styles.container}>
       <View style={styles.backgroundCard}>
-
         <Text style={styles.title}>Organizador 💰</Text>
         <Text style={styles.subtitle}>Controla tus finanzas facilmente</Text>
 
-        {/* Inputs */}
         <CustomInput
-          value={email}
-          onChange={setEmail}
           title="Correo"
+          value={email}
           type="email"
+          onChange={setEmail}
           required
         />
-
         <CustomInput
-          value={password}
-          onChange={setPassword}
           title="Contraseña"
+          value={password}
           type="password"
+          onChange={setPassword}
           required
         />
-
-        {/* Botones */}
-        <CustomButton title={i18n.t("signIn")} onPress={handleLogin} />
-
-        <CustomButton
-          title={i18n.t("signUp")}
-          onPress={() => navigation.navigate("SignUp")}
-          variant="secondary"
-        />
-
-        <CustomButton
-          title={i18n.t("forgotPassword")}
-          onPress={() => {}}
-          variant="tertiary"
-        />
+        <CustomButton title="Iniciar Sesión" onPress={handleLogin} variant="primary" />
+        <CustomButton title="Registrarse" onPress={handleSignUp} variant="secondary" />
+        <CustomButton title="Olvidé mi contraseña" onPress={handleForgotPassword} variant="tertiary" />
       </View>
-      
     </View>
   );
 }
@@ -78,7 +123,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#1E1E2C", // Fondo oscuro
+    backgroundColor: "#1E1E2C",
     padding: 20,
   },
   backgroundCard: {
@@ -104,5 +149,11 @@ const styles = StyleSheet.create({
     color: "#555",
     marginBottom: 20,
     textAlign: "center",
+  },
+  loading: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#1E1E2C",
   },
 });

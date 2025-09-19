@@ -1,3 +1,4 @@
+// CustomButton.tsx
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity } from "react-native";
 
@@ -16,7 +17,6 @@ export default function CustomButton({ title, onPress, variant = "primary" }: Pr
     </TouchableOpacity>
   );
 }
-
 
 const getStyles = (variant: "primary" | "secondary" | "tertiary") => {
   return StyleSheet.create({

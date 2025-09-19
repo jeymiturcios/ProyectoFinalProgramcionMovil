@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "810017621757",
+    "project_id": "organizador-de-gastos-ea5ea",
+    "storage_bucket": "organizador-de-gastos-ea5ea.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:810017621757:android:2d0e028af4cc29bd8f2094",
+        "android_client_info": {
+          "package_name": "com.miapprutinas"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDd--9pjczoBQEI1TvQwjy_g4JY5GjURsw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
