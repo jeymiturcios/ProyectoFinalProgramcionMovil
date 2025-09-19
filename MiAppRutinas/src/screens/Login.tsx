@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Alert, StyleSheet, View, ActivityIndicator, Text } from "react-native";
+import Icon from "react-native-vector-icons/MaterialIcons";
 import CustomButton from "../components/CustomButton";
 import CustomInput from "../components/CustomInput";
+import { useTheme } from "../contexts/ThemeContext";
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
@@ -14,10 +16,10 @@ import { doc, setDoc } from "firebase/firestore";
 import { auth, db } from "../config/firebase";
 
 export default function Login({ navigation }: any) {
+  const { themeColors } = useTheme();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(true);
-  const [userType, setUserType] = useState<"personal" | "empresarial">("personal"); // 👈 tipo de usuario
 
   // 👀 Detectar si hay un usuario activo
   useEffect(() => {
@@ -32,8 +34,8 @@ export default function Login({ navigation }: any) {
 
   if (loading) {
     return (
-      <View style={styles.loading}>
-        <ActivityIndicator size="large" color="#007AFF" />
+      <View style={[styles.loading, { backgroundColor: themeColors.background }]}>
+        <ActivityIndicator size="large" color={themeColors.success} />
       </View>
     );
   }
@@ -53,7 +55,21 @@ export default function Login({ navigation }: any) {
       }
       navigation.replace("HomeScreen");
     } catch (error: any) {
-      Alert.alert("Error al iniciar sesión", error.message);
+      let errorMessage = "Error al iniciar sesión";
+      
+      if (error.code === "auth/invalid-credential") {
+        errorMessage = "Email o contraseña incorrectos. Verifica tus datos.";
+      } else if (error.code === "auth/user-not-found") {
+        errorMessage = "No existe una cuenta con este email. Regístrate primero.";
+      } else if (error.code === "auth/wrong-password") {
+        errorMessage = "Contraseña incorrecta.";
+      } else if (error.code === "auth/too-many-requests") {
+        errorMessage = "Demasiados intentos fallidos. Espera un momento.";
+      } else if (error.code === "auth/network-request-failed") {
+        errorMessage = "Error de conexión. Verifica tu internet.";
+      }
+      
+      Alert.alert("Error al iniciar sesión", errorMessage);
     }
   };
 
@@ -69,7 +85,7 @@ export default function Login({ navigation }: any) {
       // Guardar en Firestore 👇
       await setDoc(doc(db, "users", userCredential.user.uid), {
         email,
-        userType, // 👈 guardamos tipo de usuario
+        userType: "personal", // 👈 tipo por defecto
         createdAt: new Date().toISOString(),
       });
 
@@ -101,8 +117,17 @@ export default function Login({ navigation }: any) {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.backgroundCard}>
+    <View style={[styles.container, { backgroundColor: themeColors.background }]}>
+      <View style={[styles.backgroundCard, { backgroundColor: themeColors.card }]}>
+        {/* Título con ícono */}
+        <View style={styles.titleContainer}>
+          <Text style={[styles.title, { color: themeColors.text }]}>Organizador</Text>
+          <Text style={styles.moneyIcon}>💰</Text>
+        </View>
+        <Text style={[styles.subtitle, { color: themeColors.subText }]}>
+          Controla tus finanzas fácilmente
+        </Text>
+
         <CustomInput
           title="Correo"
           value={email}
@@ -118,21 +143,6 @@ export default function Login({ navigation }: any) {
           required
         />
 
-        {/* 👇 Selección de tipo de usuario */}
-        <Text style={styles.label}>Selecciona tu tipo de usuario:</Text>
-        <View style={styles.typeContainer}>
-          <CustomButton
-            title="Personal"
-            variant={userType === "personal" ? "secondary" : "tertiary"}
-            onPress={() => setUserType("personal")}
-          />
-          <CustomButton
-            title="Empresarial"
-            variant={userType === "empresarial" ? "secondary" : "tertiary"}
-            onPress={() => setUserType("empresarial")}
-          />
-        </View>
-
         <CustomButton title="Iniciar Sesión" onPress={handleLogin} variant="primary" />
         <CustomButton title="Registrarse" onPress={handleSignUp} variant="secondary" />
         <CustomButton title="Olvidé mi contraseña" onPress={handleForgotPassword} variant="tertiary" />
@@ -146,35 +156,45 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#1E1E2C",
     padding: 20,
   },
   backgroundCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 15,
+    borderRadius: 20,
     padding: 30,
-    width: "85%",
+    width: "90%",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 8,
   },
-  label: {
-    marginTop: 15,
-    marginBottom: 5,
-    fontWeight: "600",
-    color: "#333",
+  titleContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 8,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: "bold",
     textAlign: "center",
   },
-  typeContainer: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    marginBottom: 20,
+  titleIcon: {
+    marginLeft: 8,
+  },
+  moneyIcon: {
+    fontSize: 24,
+    marginLeft: 8,
+  },
+  subtitle: {
+    fontSize: 16,
+    textAlign: "center",
+    marginBottom: 30,
+    fontWeight: "500",
   },
   loading: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#1E1E2C",
   },
 });

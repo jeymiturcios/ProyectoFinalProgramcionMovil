@@ -38,7 +38,9 @@ export default function AddExpenseScreen({ route, navigation }: any) {
         category,
         date: expense.date,
       });
-      Alert.alert("Éxito", "Gasto actualizado");
+      Alert.alert("Éxito", "Gasto actualizado", [
+        { text: "OK", onPress: () => navigation.goBack() }
+      ]);
     } else {
       addExpense({
         description,
@@ -46,9 +48,10 @@ export default function AddExpenseScreen({ route, navigation }: any) {
         category,
         date: new Date().toISOString(),
       });
-      Alert.alert("Éxito", "Gasto agregado");
+      Alert.alert("Éxito", "Gasto agregado correctamente", [
+        { text: "OK", onPress: () => navigation.goBack() }
+      ]);
     }
-    navigation.goBack();
   };
 
   return (

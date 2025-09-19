@@ -1,6 +1,7 @@
 // CustomButton.tsx
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity } from "react-native";
+import { useTheme } from "../contexts/ThemeContext";
 
 type Props = {
     title: string;
@@ -9,7 +10,8 @@ type Props = {
 }
 
 export default function CustomButton({ title, onPress, variant='primary' }: Props){
-    const styles = getStyles(variant);
+    const { themeColors } = useTheme();
+    const styles = getStyles(variant, themeColors);
 
     return (
         <TouchableOpacity style={styles.button} onPress={onPress}>
@@ -18,21 +20,30 @@ export default function CustomButton({ title, onPress, variant='primary' }: Prop
     );
 }
 
-const getStyles = (variant: 'primary' | 'secondary' | 'tertiary') => StyleSheet.create({
+const getStyles = (variant: 'primary' | 'secondary' | 'tertiary', themeColors: any) => StyleSheet.create({
     button: {
-        height: 45,
-        paddingHorizontal: 12,
+        height: 50,
+        paddingHorizontal: 20,
         marginVertical: 8,
-        borderRadius: 5,
+        borderRadius: 8,
         backgroundColor:
-          variant === 'primary' ? '#1c1c30' :
-          variant === 'secondary' ? '#65659c' : 'transparent',
+          variant === 'primary' ? themeColors.success :
+          variant === 'secondary' ? 'transparent' : 'transparent',
+        borderWidth: variant === 'secondary' ? 2 : variant === 'tertiary' ? 1 : 0,
+        borderColor: variant === 'secondary' ? themeColors.success : 
+                    variant === 'tertiary' ? themeColors.border : 'transparent',
         justifyContent: 'center',
         alignItems: 'center',
+        shadowColor: variant === 'primary' ? themeColors.success : 'transparent',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 3,
     },
     text: {
-        color: variant === 'primary' || variant === 'secondary' ? '#fff' : '#000',
-        fontWeight: 'bold',
+        color: variant === 'primary' ? '#fff' : 
+               variant === 'secondary' ? themeColors.success : themeColors.text,
+        fontWeight: '600',
         fontSize: 16,
         textAlign: 'center',
     },

@@ -34,9 +34,45 @@ const ExpenseContext = createContext<ExpenseContextType | null>(null);
 export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
 
+  // Cargar datos guardados localmente al iniciar o cuando cambie el usuario
+  useEffect(() => {
+    if (auth.currentUser) {
+      loadLocalExpenses();
+    }
+  }, [auth.currentUser?.uid]);
+
+  // Cargar gastos desde AsyncStorage por usuario
+  const loadLocalExpenses = async () => {
+    try {
+      if (!auth.currentUser) return;
+      const userKey = `expenses_${auth.currentUser.uid}`;
+      const savedExpenses = await AsyncStorage.getItem(userKey);
+      if (savedExpenses) {
+        setExpenses(JSON.parse(savedExpenses));
+      }
+    } catch (error) {
+      console.error("Error cargando gastos locales:", error);
+    }
+  };
+
+  // Guardar gastos en AsyncStorage por usuario
+  const saveLocalExpenses = async (newExpenses: Expense[]) => {
+    try {
+      if (!auth.currentUser) return;
+      const userKey = `expenses_${auth.currentUser.uid}`;
+      await AsyncStorage.setItem(userKey, JSON.stringify(newExpenses));
+    } catch (error) {
+      console.error("Error guardando gastos locales:", error);
+    }
+  };
+
   // 🔴 Suscripción en tiempo real
   useEffect(() => {
-    if (!auth.currentUser) return; // si no hay usuario, no escuchar
+    if (!auth.currentUser) {
+      // Si no hay usuario, limpiar gastos
+      setExpenses([]);
+      return;
+    }
 
     const userId = auth.currentUser.uid;
     const q = query(collection(db, "users", userId, "expenses"));
@@ -47,6 +83,8 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
         loaded.push({ id: docSnap.id, ...(docSnap.data() as Expense) });
       });
       setExpenses(loaded);
+      // Guardar también localmente
+      saveLocalExpenses(loaded);
     });
 
     // Se desuscribe al desmontar o cerrar sesión
@@ -55,30 +93,57 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
 
   // Agregar gasto
   const addExpense = async (expense: Omit<Expense, "id">) => {
-    if (!auth.currentUser) return;
+    if (!auth.currentUser) {
+      // Si no hay usuario autenticado, guardar solo localmente
+      const newExpense = { ...expense, id: Date.now().toString() };
+      const updatedExpenses = [...expenses, newExpense];
+      setExpenses(updatedExpenses);
+      await saveLocalExpenses(updatedExpenses);
+      return;
+    }
+    
     const userId = auth.currentUser.uid;
     await addDoc(collection(db, "users", userId, "expenses"), expense);
   };
 
   // Eliminar gasto
   const deleteExpense = async (id: string) => {
-    if (!auth.currentUser) return;
+    if (!auth.currentUser) {
+      // Si no hay usuario autenticado, eliminar solo localmente
+      const updatedExpenses = expenses.filter(expense => expense.id !== id);
+      setExpenses(updatedExpenses);
+      await saveLocalExpenses(updatedExpenses);
+      return;
+    }
+    
     const userId = auth.currentUser.uid;
     await deleteDoc(doc(db, "users", userId, "expenses", id));
   };
 
   // Editar gasto
   const updateExpense = async (id: string, expense: Omit<Expense, "id">) => {
-    if (!auth.currentUser) return;
+    if (!auth.currentUser) {
+      // Si no hay usuario autenticado, actualizar solo localmente
+      const updatedExpenses = expenses.map(exp => 
+        exp.id === id ? { ...expense, id } : exp
+      );
+      setExpenses(updatedExpenses);
+      await saveLocalExpenses(updatedExpenses);
+      return;
+    }
+    
     const userId = auth.currentUser.uid;
     const docRef = doc(db, "users", userId, "expenses", id);
     await updateDoc(docRef, expense);
   };
 
   // Limpiar gastos locales (cuando se cierre sesión)
-  const clearExpenses = () => {
+  const clearExpenses = async () => {
     setExpenses([]);
-    AsyncStorage.removeItem("expenses");
+    if (auth.currentUser) {
+      const userKey = `expenses_${auth.currentUser.uid}`;
+      await AsyncStorage.removeItem(userKey);
+    }
   };
 
   return (

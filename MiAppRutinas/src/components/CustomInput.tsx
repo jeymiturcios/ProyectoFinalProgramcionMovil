@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { KeyboardTypeOptions, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons";
+import { useTheme } from "../contexts/ThemeContext";
 
 type Props = {
     value: string;
@@ -12,6 +13,7 @@ type Props = {
 }
 
 export default function CustomInput({ value, title, type = "text", onChange, required }: Props) {
+    const { themeColors } = useTheme();
     const [isSecureText, setIsSecureText] = useState(type === 'password');
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
@@ -31,11 +33,18 @@ export default function CustomInput({ value, title, type = "text", onChange, req
 
     return (
         <View style={{ marginBottom: 10 }}>
-            <View style={[styles.inputContainer, error && styles.inputError]}>
+            <View style={[
+                styles.inputContainer, 
+                { 
+                    backgroundColor: themeColors.card,
+                    borderColor: error ? '#FF6B6B' : themeColors.border,
+                },
+                error && styles.inputError
+            ]}>
                 <TextInput
-                    style={styles.input}
+                    style={[styles.input, { color: themeColors.text }]}
                     placeholder={title}
-                    placeholderTextColor="#999"
+                    placeholderTextColor={themeColors.subText}
                     value={value}
                     onChangeText={onChange}
                     secureTextEntry={isSecureText}
@@ -48,11 +57,15 @@ export default function CustomInput({ value, title, type = "text", onChange, req
                         setIsPasswordVisible(!isPasswordVisible);
                         setIsSecureText(!isSecureText);
                     }}>
-                        <Icon name={isPasswordVisible ? 'visibility-off' : 'visibility'} size={20} color="#000" />
+                        <Icon 
+                            name={isPasswordVisible ? 'visibility-off' : 'visibility'} 
+                            size={20} 
+                            color={themeColors.subText} 
+                        />
                     </TouchableOpacity>
                 )}
             </View>
-            {error && <Text style={styles.error}>{error}</Text>}
+            {error && <Text style={[styles.error, { color: '#FF6B6B' }]}>{error}</Text>}
         </View>
     );
 }
@@ -62,22 +75,21 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: '#ccc',
-        borderRadius: 5,
+        borderRadius: 8,
         paddingHorizontal: 12,
-        backgroundColor: '#f9f9f9',
+        minHeight: 50,
     },
     input: {
         flex: 1,
         paddingVertical: 12,
         fontSize: 16,
-        color: '#000',
     },
     inputError: {
-        borderColor: 'red',
+        borderWidth: 2,
     },
     error: {
-        color: 'red',
         marginTop: 4,
+        fontSize: 14,
+        fontWeight: '500',
     },
 });
