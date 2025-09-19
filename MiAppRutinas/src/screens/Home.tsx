@@ -92,6 +92,13 @@ export default function Home() {
     Otros: "💡",
   };
 
+  const categoryLabels: Record<string, string> = {
+    Comida: "Comida",
+    Transporte: "Transporte",
+    Ocio: "Ocio",
+    Otros: "Otros",
+  };
+
   // Confirmación al eliminar
   const confirmDelete = (id: string) => {
     Alert.alert("Eliminar gasto", "¿Seguro que quieres eliminar este gasto?", [
@@ -196,7 +203,7 @@ export default function Home() {
           <Text style={[styles.description, { color: theme.text }]}>{item.description}</Text>
           <View style={styles.expenseInfo}>
             <Text style={[styles.category, { color: theme.subText }]}>
-              {categoryIcons[item.category]} {item.category}
+              {categoryIcons[item.category]} {categoryLabels[item.category] || item.category}
             </Text>
             <Text style={[styles.date, { color: theme.subText }]}>
               📅 {dateText}

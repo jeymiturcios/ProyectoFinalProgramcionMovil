@@ -38,6 +38,13 @@ export default function AddExpenseScreen({ route, navigation }: any) {
     Otros: "💡",
   };
 
+  const categoryLabels: Record<string, string> = {
+    Comida: "Comida",
+    Transporte: "Transporte",
+    Ocio: "Ocio",
+    Otros: "Otros",
+  };
+
   useEffect(() => {
     if (expense) {
       setDescription(expense.description);
@@ -130,10 +137,16 @@ export default function AddExpenseScreen({ route, navigation }: any) {
               onPress={() => setCategory(cat)}
             >
               <Text style={[
+                styles.categoryIcon,
+                { color: category === cat ? "#fff" : theme.text }
+              ]}>
+                {categoryIcons[cat]}
+              </Text>
+              <Text style={[
                 styles.categoryButtonText,
                 { color: category === cat ? "#fff" : theme.text }
               ]}>
-                {categoryIcons[cat]} {cat}
+                {categoryLabels[cat]}
               </Text>
             </TouchableOpacity>
           ))}
@@ -200,16 +213,22 @@ const styles = StyleSheet.create({
   },
   categoryButton: {
     flex: 1,
-    paddingVertical: 10,
+    paddingVertical: 12,
     paddingHorizontal: 4,
     marginHorizontal: 2,
     borderRadius: 8,
     borderWidth: 1,
     alignItems: "center",
+    justifyContent: "center",
+  },
+  categoryIcon: {
+    fontSize: 20,
+    marginBottom: 4,
   },
   categoryButtonText: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: "600",
+    textAlign: "center",
   },
 });
 
