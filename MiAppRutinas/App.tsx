@@ -19,9 +19,21 @@ export default function App() {
           <ExpenseProvider>
             <NavigationContainer>
               <Stack.Navigator initialRouteName="LoginScreen">
-                <Stack.Screen name="LoginScreen" component={Login} />
-                <Stack.Screen name="HomeScreen" component={Home} />
-                <Stack.Screen name="AddExpenseScreen" component={AddExpenseScreen} />
+                <Stack.Screen 
+                  name="LoginScreen" 
+                  component={Login} 
+                  options={{ headerShown: false }}
+                />
+                <Stack.Screen 
+                  name="HomeScreen" 
+                  component={Home} 
+                  options={{ headerShown: false }}
+                />
+                <Stack.Screen 
+                  name="AddExpenseScreen" 
+                  component={AddExpenseScreen} 
+                  options={{ headerShown: false }}
+                />
               </Stack.Navigator>
             </NavigationContainer>
           </ExpenseProvider>

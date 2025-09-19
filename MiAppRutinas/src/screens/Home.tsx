@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import {
   FlatList,
   StyleSheet,
@@ -18,6 +18,7 @@ import { PieChart } from "react-native-chart-kit";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { signOut } from "firebase/auth";
 import { auth } from "../config/firebase";
+import { fetchUSDToHNL } from "../services/exchangeRateService";
 
 // 🎨 Temas
 const lightTheme = {
@@ -40,7 +41,7 @@ const darkTheme = {
 
 export default function Home() {
   const { user, logout } = useAuth(); // 👈 ahora user trae email y userType
-  const { expenses, deleteExpense, clearExpenses, addExpense } = useExpenses();
+  const { expenses, deleteExpense, clearExpenses, addExpense, forceReloadFromFirebase } = useExpenses();
   const navigation = useNavigation<any>();
 
   const [dateFilter, setDateFilter] = useState<"Todos" | "Hoy" | "Semana" | "Mes">("Todos");
@@ -49,8 +50,40 @@ export default function Home() {
   const [darkMode, setDarkMode] = useState(false);
   const [showChart, setShowChart] = useState(true); // Inicialmente visible
 
+  // Estado para el tipo de cambio
+  const [exchangeRate, setExchangeRate] = useState<number | null>(null);
+  const [loadingExchangeRate, setLoadingExchangeRate] = useState(true);
+  const [exchangeRateError, setExchangeRateError] = useState<string | null>(null);
+
 
   const theme = darkMode ? darkTheme : lightTheme;
+
+  // Función para formatear números con separador de miles
+  const formatNumber = (num: number): string => {
+    return num.toLocaleString('es-HN', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  };
+
+  // Efecto para cargar el tipo de cambio
+  useEffect(() => {
+    const loadExchangeRate = async () => {
+      try {
+        setLoadingExchangeRate(true);
+        setExchangeRateError(null);
+        const rate = await fetchUSDToHNL();
+        setExchangeRate(rate);
+      } catch (error) {
+        console.error('Error loading exchange rate:', error);
+        setExchangeRateError('Error al cargar el tipo de cambio');
+      } finally {
+        setLoadingExchangeRate(false);
+      }
+    };
+
+    loadExchangeRate();
+  }, []);
 
   const categoryIcons: Record<string, string> = {
     Comida: "🍔",
@@ -172,7 +205,7 @@ export default function Home() {
         </View>
         <View style={styles.rightSection}>
           <Text style={[styles.amount, { color: theme.success }]}>
-            L {item.amount.toFixed(2)}
+            L {formatNumber(item.amount)}
           </Text>
           <View style={styles.actionButtons}>
             {/* Botón editar */}
@@ -216,33 +249,92 @@ export default function Home() {
                 <Switch value={darkMode} onValueChange={setDarkMode} />
               </View>
 
-              <TouchableOpacity onPress={handleLogout}>
-                <Icon name="logout" size={28} color={theme.text} />
-              </TouchableOpacity>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                <TouchableOpacity 
+                  style={[styles.refreshButton, { backgroundColor: theme.background }]} 
+                  onPress={forceReloadFromFirebase}
+                >
+                  <Icon name="refresh" size={22} color={theme.primary} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={handleLogout}>
+                  <Icon name="logout" size={28} color={theme.text} />
+                </TouchableOpacity>
+              </View>
             </View>
 
-            {/* Usuario con tipo */}
-            <Text style={[styles.header, { color: theme.text }]}>
-              Hola {user?.email} {user?.userType && `(${user.userType})`}
-            </Text>
+            {/* Usuario con icono de perfil */}
+            <View style={styles.userProfileContainer}>
+              <View style={[styles.profileIcon, { backgroundColor: theme.success }]}>
+                <Icon name="person" size={24} color="#fff" />
+              </View>
+              <View style={styles.userInfo}>
+                <Text style={[styles.userEmail, { color: theme.text }]}>
+                  {user?.email}
+                </Text>
+                {user?.userType && (
+                  <Text style={[styles.userType, { color: theme.subText }]}>
+                    {user.userType}
+                  </Text>
+                )}
+              </View>
+            </View>
 
-            <Text style={[styles.total, { color: theme.success }]}>
-              💰 Total este mes: L {totalMonth.toFixed(2)}
-            </Text>
+            {/* Información financiera compacta */}
+            <View style={[styles.financialInfoCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
+              <View style={styles.financialRow}>
+                <Text style={[styles.financialLabel, { color: theme.text }]}>
+                  💰 Total este mes:
+                </Text>
+                <Text style={[styles.financialValue, { color: theme.success }]}>
+                  L {formatNumber(totalMonth)}
+                </Text>
+              </View>
+              <View style={styles.financialRow}>
+                <Text style={[styles.financialLabel, { color: theme.text }]}>
+                  💱 Precio del dolar:
+                </Text>
+                {loadingExchangeRate ? (
+                  <ActivityIndicator size="small" color={theme.success} />
+                ) : exchangeRateError ? (
+                  <Text style={[styles.exchangeRateError, { color: '#FF3B30' }]}>
+                    Error
+                  </Text>
+                ) : (
+                  <Text style={[styles.financialValue, { color: theme.success }]}>
+                    L {exchangeRate ? formatNumber(exchangeRate) : '0.00'}
+                  </Text>
+                )}
+              </View>
+            </View>
 
             <CustomButton title="Agregar gasto" onPress={() => navigation.navigate("AddExpenseScreen")} />
 
 
-            {/* Filtros fecha */}
-            <View style={styles.filters}>
-              {["Todos", "Hoy", "Semana", "Mes"].map((f) => (
-                <CustomButton
-                  key={f}
-                  title={f}
-                  onPress={() => setDateFilter(f as any)}
-                  variant={dateFilter === f ? "secondary" : "tertiary"}
-                />
-              ))}
+            {/* Filtros fecha compactos */}
+            <View style={[styles.filtersContainer, { backgroundColor: theme.card, borderColor: theme.border }]}>
+              <Text style={[styles.filtersTitle, { color: theme.text }]}>📅 Filtros:</Text>
+              <View style={styles.filtersRow}>
+                {["Todos", "Hoy", "Semana", "Mes"].map((f) => (
+                  <TouchableOpacity
+                    key={f}
+                    style={[
+                      styles.filterButton,
+                      { 
+                        backgroundColor: dateFilter === f ? theme.success : theme.background,
+                        borderColor: theme.border
+                      }
+                    ]}
+                    onPress={() => setDateFilter(f as any)}
+                  >
+                    <Text style={[
+                      styles.filterButtonText,
+                      { color: dateFilter === f ? "#fff" : theme.text }
+                    ]}>
+                      {f}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
             </View>
 
             {/* Botón mostrar/ocultar gráfico */}
@@ -302,13 +394,93 @@ const styles = StyleSheet.create({
   headerSection: {
     paddingBottom: 10,
   },
-  header: { fontWeight: "bold", fontSize: 20, marginBottom: 10 },
-  total: { fontSize: 18, fontWeight: "bold", marginBottom: 15 },
-  filters: {
+  // Estilos para el perfil de usuario
+  userProfileContainer: {
     flexDirection: "row",
-    flexWrap: "wrap",
+    alignItems: "center",
+    marginBottom: 15,
+    paddingHorizontal: 5,
+  },
+  profileIcon: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  userInfo: {
+    flex: 1,
+  },
+  userEmail: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 2,
+  },
+  userType: {
+    fontSize: 12,
+    fontWeight: "500",
+    textTransform: "uppercase",
+  },
+  // Estilos para información financiera
+  financialInfoCard: {
+    padding: 15,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 15,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  financialRow: {
+    flexDirection: "row",
     justifyContent: "space-between",
-    marginVertical: 10,
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  financialLabel: {
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  financialValue: {
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  // Estilos para filtros
+  filtersContainer: {
+    padding: 15,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 15,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  filtersTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    marginBottom: 10,
+  },
+  filtersRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  filterButton: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    marginHorizontal: 2,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: "center",
+  },
+  filterButtonText: {
+    fontSize: 12,
+    fontWeight: "600",
   },
   list: { 
     paddingBottom: 20,
@@ -396,4 +568,21 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   noData: { textAlign: "center", marginTop: 20 },
+  refreshButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+  },
+  // Estilos para errores
+  exchangeRateError: {
+    fontSize: 12,
+    fontStyle: "italic",
+  },
 });

@@ -19,6 +19,7 @@ export default function Login({ navigation }: any) {
   const { themeColors } = useTheme();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [userType, setUserType] = useState<"personal" | "empresarial">("personal");
   const [loading, setLoading] = useState(true);
 
   // 👀 Detectar si hay un usuario activo
@@ -85,7 +86,7 @@ export default function Login({ navigation }: any) {
       // Guardar en Firestore 👇
       await setDoc(doc(db, "users", userCredential.user.uid), {
         email,
-        userType: "personal", // 👈 tipo por defecto
+        userType: userType, // 👈 tipo seleccionado por el usuario
         createdAt: new Date().toISOString(),
       });
 
@@ -143,6 +144,23 @@ export default function Login({ navigation }: any) {
           required
         />
 
+        {/* Selección de tipo de usuario */}
+        <View style={styles.typeContainer}>
+          <Text style={[styles.typeLabel, { color: themeColors.text }]}>Tipo de usuario:</Text>
+          <View style={styles.typeButtons}>
+            <CustomButton
+              title="👤 Personal"
+              onPress={() => setUserType("personal")}
+              variant={userType === "personal" ? "primary" : "tertiary"}
+            />
+            <CustomButton
+              title="🏢 Empresa"
+              onPress={() => setUserType("empresarial")}
+              variant={userType === "empresarial" ? "primary" : "tertiary"}
+            />
+          </View>
+        </View>
+
         <CustomButton title="Iniciar Sesión" onPress={handleLogin} variant="primary" />
         <CustomButton title="Registrarse" onPress={handleSignUp} variant="secondary" />
         <CustomButton title="Olvidé mi contraseña" onPress={handleForgotPassword} variant="tertiary" />
@@ -160,7 +178,7 @@ const styles = StyleSheet.create({
   },
   backgroundCard: {
     borderRadius: 20,
-    padding: 30,
+    padding: 20,
     width: "90%",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 8 },
@@ -175,7 +193,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   title: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: "bold",
     textAlign: "center",
   },
@@ -187,14 +205,28 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 14,
     textAlign: "center",
-    marginBottom: 30,
+    marginBottom: 20,
     fontWeight: "500",
   },
   loading: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+  },
+  typeContainer: {
+    marginVertical: 10,
+  },
+  typeLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  typeButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 8,
   },
 });
