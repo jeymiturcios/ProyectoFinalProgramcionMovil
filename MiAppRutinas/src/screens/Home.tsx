@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Alert,
   Switch,
+  ActivityIndicator,
 } from "react-native";
 import { useAuth } from "../contexts/AuthContext";
 import { useExpenses } from "../contexts/ExpenseContext";
@@ -38,15 +39,17 @@ const darkTheme = {
 };
 
 export default function Home() {
-  const { user } = useAuth();
-  const { expenses, deleteExpense, clearExpenses } = useExpenses(); // 👈 incluir clearExpenses
+  const { user, logout } = useAuth(); // 👈 ahora user trae email y userType
+  const { expenses, deleteExpense, clearExpenses } = useExpenses();
   const navigation = useNavigation<any>();
 
   const [filter, setFilter] = useState<string | null>(null);
   const [dateFilter, setDateFilter] = useState<"Todos" | "Hoy" | "Semana" | "Mes">("Todos");
 
-  // 👇 Switch para tema manual
+  // Switches para tema y gráfico
   const [darkMode, setDarkMode] = useState(false);
+  const [showChart, setShowChart] = useState(true);
+
   const theme = darkMode ? darkTheme : lightTheme;
 
   const categoryIcons: Record<string, string> = {
@@ -67,9 +70,10 @@ export default function Home() {
   // 🔐 Cerrar sesión
   const handleLogout = async () => {
     try {
-      clearExpenses(); // limpia lista local
-      await signOut(auth); // Firebase logout
-      navigation.replace("LoginScreen"); // vuelve al login
+      clearExpenses();
+      await signOut(auth); // Firebase
+      logout(); // Contexto
+      navigation.replace("LoginScreen");
     } catch (error) {
       console.error("Error al cerrar sesión:", error);
     }
@@ -158,20 +162,39 @@ export default function Home() {
     </View>
   );
 
+  // Loader mientras carga
+  if (!expenses) {
+    return (
+      <View style={[styles.container, { backgroundColor: theme.background, justifyContent: "center", alignItems: "center" }]}>
+        <ActivityIndicator size="large" color={theme.success} />
+        <Text style={{ color: theme.text, marginTop: 10 }}>Cargando gastos...</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      {/* 🔘 Switch de tema y logout */}
+      {/* Switches y logout */}
       <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 10 }}>
         <View style={{ flexDirection: "row", alignItems: "center" }}>
           <Text style={{ color: theme.text, marginRight: 8 }}>🌞 / 🌙</Text>
           <Switch value={darkMode} onValueChange={setDarkMode} />
         </View>
+
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <Text style={{ color: theme.text, marginRight: 8 }}>📊</Text>
+          <Switch value={showChart} onValueChange={setShowChart} />
+        </View>
+
         <TouchableOpacity onPress={handleLogout}>
           <Icon name="logout" size={28} color={theme.text} />
         </TouchableOpacity>
       </View>
 
-      <Text style={[styles.header, { color: theme.text }]}>Hola {user?.email}</Text>
+      {/* Usuario con tipo */}
+      <Text style={[styles.header, { color: theme.text }]}>
+        Hola {user?.email} {user?.userType && `(${user.userType})`}
+      </Text>
 
       <Text style={[styles.total, { color: theme.success }]}>
         💰 Total este mes: L {totalMonth.toFixed(2)}
@@ -203,8 +226,8 @@ export default function Home() {
         ))}
       </View>
 
-      {/* Gráfico */}
-      {chartData.length > 0 && (
+      {/* Gráfico (opcional) */}
+      {showChart && chartData.length > 0 && (
         <PieChart
           data={chartData}
           width={Dimensions.get("window").width - 40}
@@ -271,5 +294,3 @@ const styles = StyleSheet.create({
   rightSection: { alignItems: "flex-end", justifyContent: "space-between" },
   noData: { textAlign: "center", marginTop: 20 },
 });
-
-

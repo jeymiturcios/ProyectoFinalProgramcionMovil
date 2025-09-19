@@ -36,7 +36,7 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
 
   // 🔴 Suscripción en tiempo real
   useEffect(() => {
-    if (!auth.currentUser) return;
+    if (!auth.currentUser) return; // si no hay usuario, no escuchar
 
     const userId = auth.currentUser.uid;
     const q = query(collection(db, "users", userId, "expenses"));
@@ -49,8 +49,9 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
       setExpenses(loaded);
     });
 
-    return unsubscribe; // cleanup al cerrar sesión
-  }, [auth.currentUser]);
+    // Se desuscribe al desmontar o cerrar sesión
+    return () => unsubscribe();
+  }, [auth.currentUser?.uid]);
 
   // Agregar gasto
   const addExpense = async (expense: Omit<Expense, "id">) => {
@@ -74,7 +75,7 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
     await updateDoc(docRef, expense);
   };
 
-  // Limpiar (opcional)
+  // Limpiar gastos locales (cuando se cierre sesión)
   const clearExpenses = () => {
     setExpenses([]);
     AsyncStorage.removeItem("expenses");
@@ -94,3 +95,4 @@ export const useExpenses = () => {
   }
   return context;
 };
+
