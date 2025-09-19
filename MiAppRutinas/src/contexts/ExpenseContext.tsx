@@ -1,7 +1,15 @@
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { db, auth } from "../config/firebase";
-import { collection, addDoc, getDocs, query, where } from "firebase/firestore";
+import { 
+  collection, 
+  addDoc, 
+  deleteDoc, 
+  doc, 
+  updateDoc, 
+  onSnapshot, 
+  query 
+} from "firebase/firestore";
 
 // Tipo de gasto
 export type Expense = {
@@ -16,6 +24,8 @@ export type Expense = {
 type ExpenseContextType = {
   expenses: Expense[];
   addExpense: (expense: Omit<Expense, "id">) => void;
+  deleteExpense: (id: string) => void;
+  updateExpense: (id: string, expense: Omit<Expense, "id">) => void;
   clearExpenses: () => void;
 };
 
@@ -24,44 +34,59 @@ const ExpenseContext = createContext<ExpenseContextType | null>(null);
 export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
 
-  // Agregar un gasto nuevo
-const addExpense = async (expense: Omit<Expense, "id">) => {
-  if (!auth.currentUser) return;
-  const userId = auth.currentUser.uid;
+  // 🔴 Suscripción en tiempo real
+  useEffect(() => {
+    if (!auth.currentUser) return;
 
-  await addDoc(collection(db, "users", userId, "expenses"), expense);
-  loadExpenses(); // recarga lista
-};
+    const userId = auth.currentUser.uid;
+    const q = query(collection(db, "users", userId, "expenses"));
 
-  // loadExpenses
-const loadExpenses = async () => {
-  if (!auth.currentUser) return;
-  const userId = auth.currentUser.uid;
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const loaded: Expense[] = [];
+      snapshot.forEach((docSnap) => {
+        loaded.push({ id: docSnap.id, ...(docSnap.data() as Expense) });
+      });
+      setExpenses(loaded);
+    });
 
-  const q = query(collection(db, "users", userId, "expenses"));
-  const querySnapshot = await getDocs(q);
+    return unsubscribe; // cleanup al cerrar sesión
+  }, [auth.currentUser]);
 
-  const loaded: Expense[] = [];
-  querySnapshot.forEach((doc) => {
-    loaded.push({ id: doc.id, ...(doc.data() as Expense) });
-  });
-  setExpenses(loaded);
-};
+  // Agregar gasto
+  const addExpense = async (expense: Omit<Expense, "id">) => {
+    if (!auth.currentUser) return;
+    const userId = auth.currentUser.uid;
+    await addDoc(collection(db, "users", userId, "expenses"), expense);
+  };
 
-  // Limpiar gastos (opcional, para debug)
+  // Eliminar gasto
+  const deleteExpense = async (id: string) => {
+    if (!auth.currentUser) return;
+    const userId = auth.currentUser.uid;
+    await deleteDoc(doc(db, "users", userId, "expenses", id));
+  };
+
+  // Editar gasto
+  const updateExpense = async (id: string, expense: Omit<Expense, "id">) => {
+    if (!auth.currentUser) return;
+    const userId = auth.currentUser.uid;
+    const docRef = doc(db, "users", userId, "expenses", id);
+    await updateDoc(docRef, expense);
+  };
+
+  // Limpiar (opcional)
   const clearExpenses = () => {
     setExpenses([]);
     AsyncStorage.removeItem("expenses");
   };
 
   return (
-    <ExpenseContext.Provider value={{ expenses, addExpense, clearExpenses }}>
+    <ExpenseContext.Provider value={{ expenses, addExpense, deleteExpense, updateExpense, clearExpenses }}>
       {children}
     </ExpenseContext.Provider>
   );
 };
 
-// Hook para usar el contexto
 export const useExpenses = () => {
   const context = useContext(ExpenseContext);
   if (!context) {

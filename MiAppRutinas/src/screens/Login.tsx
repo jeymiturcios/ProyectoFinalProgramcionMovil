@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Alert, StyleSheet, View } from "react-native";
+import React, { useState, useEffect } from "react";
+import { Alert, StyleSheet, View, ActivityIndicator } from "react-native";
 import CustomButton from "../components/CustomButton";
 import CustomInput from "../components/CustomInput";
 import { 
@@ -7,13 +7,34 @@ import {
   createUserWithEmailAndPassword, 
   sendPasswordResetEmail,
   sendEmailVerification,
-  signOut
+  signOut,
+  onAuthStateChanged
 } from "firebase/auth";
 import { auth } from "../config/firebase";
 
 export default function Login({ navigation }: any) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  // 👀 Detectar usuario ya autenticado
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user && user.emailVerified) {
+        navigation.replace("HomeScreen");
+      }
+      setLoading(false);
+    });
+    return unsubscribe;
+  }, []);
+
+  if (loading) {
+    return (
+      <View style={styles.loading}>
+        <ActivityIndicator size="large" color="#007AFF" />
+      </View>
+    );
+  }
 
   // Iniciar sesión
   const handleLogin = async () => {
@@ -34,7 +55,7 @@ export default function Login({ navigation }: any) {
     }
   };
 
-  // Registrarse con verificación de correo
+  // Registrarse
   const handleSignUp = async () => {
     if (!email || !password) {
       Alert.alert("Error", "Debes ingresar correo y contraseña");
@@ -47,7 +68,7 @@ export default function Login({ navigation }: any) {
         "Registro exitoso",
         "Revisa tu correo para verificar tu cuenta antes de iniciar sesión"
       );
-      await signOut(auth); // cerrar sesión hasta que verifique su email
+      await signOut(auth); 
       setEmail("");
       setPassword("");
     } catch (error: any) {
@@ -55,7 +76,7 @@ export default function Login({ navigation }: any) {
     }
   };
 
-  // Olvidé contraseña
+  // Recuperar contraseña
   const handleForgotPassword = async () => {
     if (!email) {
       Alert.alert("Error", "Introduce tu correo para recuperar contraseña");
@@ -112,7 +133,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 5,
   },
+  loading: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#1E1E2C",
+  },
 });
-
 
 
