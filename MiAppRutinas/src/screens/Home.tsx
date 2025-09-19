@@ -43,7 +43,6 @@ export default function Home() {
   const { expenses, deleteExpense, clearExpenses, addExpense } = useExpenses();
   const navigation = useNavigation<any>();
 
-  const [filter, setFilter] = useState<string | null>(null);
   const [dateFilter, setDateFilter] = useState<"Todos" | "Hoy" | "Semana" | "Mes">("Todos");
 
   // Switches para tema y gráfico
@@ -111,9 +110,8 @@ export default function Home() {
 
   // Aplicar filtros
   const filteredExpenses = expenses.filter((e) => {
-    const matchCategory = filter ? e.category === filter : true;
     const matchDate = filterByDate(e.date);
-    return matchCategory && matchDate;
+    return matchDate;
   });
 
   // Total del mes actual
@@ -234,32 +232,6 @@ export default function Home() {
 
             <CustomButton title="Agregar gasto" onPress={() => navigation.navigate("AddExpenseScreen")} />
 
-            {/* Filtros categoría mejorados */}
-            <View style={styles.categoryContainer}>
-              {["Todos", "Comida", "Transporte", "Ocio", "Otros"].map((cat) => (
-                <TouchableOpacity
-                  key={cat}
-                  style={[
-                    styles.categoryButton,
-                    { 
-                      backgroundColor: filter === cat ? theme.success : theme.card,
-                      borderColor: theme.border,
-                    }
-                  ]}
-                  onPress={() => setFilter(cat === "Todos" ? null : cat)}
-                >
-                  <Text style={[
-                    styles.categoryText,
-                    { 
-                      color: filter === cat ? '#fff' : theme.text,
-                      fontWeight: filter === cat ? 'bold' : 'normal'
-                    }
-                  ]}>
-                    {cat === "Todos" ? "Todos" : `${categoryIcons[cat]} ${cat}`}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
 
             {/* Filtros fecha */}
             <View style={styles.filters}>
@@ -337,28 +309,6 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     justifyContent: "space-between",
     marginVertical: 10,
-  },
-  // Nuevos estilos para categorías mejoradas
-  categoryContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    marginVertical: 10,
-    gap: 8,
-  },
-  categoryButton: {
-    flex: 1,
-    minWidth: "18%",
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  categoryText: {
-    fontSize: 12,
-    textAlign: "center",
   },
   list: { 
     paddingBottom: 20,
