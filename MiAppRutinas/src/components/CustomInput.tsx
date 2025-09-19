@@ -58,7 +58,7 @@ export default function CustomInput({ value, title, type = "text", onChange, req
                         setIsSecureText(!isSecureText);
                     }}>
                         <Icon 
-                            name={isPasswordVisible ? 'visibility-off' : 'visibility'} 
+                            name={isPasswordVisible ? 'visibility' : 'visibility-off'} 
                             size={20} 
                             color={themeColors.subText} 
                         />
